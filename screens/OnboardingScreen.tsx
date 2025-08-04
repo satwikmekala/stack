@@ -6,9 +6,11 @@ import { generateSplit } from '@/utils/workoutUtils';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
+import { useRouter } from 'expo-router';
 
 const OnboardingScreen = () => {
   const { dispatch } = useApp();
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
     name: '',
@@ -39,6 +41,9 @@ const OnboardingScreen = () => {
     };
 
     dispatch({ type: 'SET_USER', payload: userProfile });
+
+    // Navigate to the main app after onboarding is complete
+    router.replace('/');
   };
 
   const renderStep = () => {
