@@ -51,9 +51,9 @@ const OnboardingScreen = () => {
       case 0:
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.title}>Welcome to Stack</Text>
-            <Text style={styles.subtitle}>Let's set up your workout routine</Text>
-            <Text style={styles.question}>What's your name?</Text>
+            <Text style={styles.singlePrompt}>
+              what should{'\n'}we call you ?
+            </Text>
             <Input
               value={formData.name}
               onChangeText={(name) => setFormData({ ...formData, name })}
@@ -274,6 +274,15 @@ const styles = StyleSheet.create({
   },
   progressDotActive: {
     backgroundColor: '#007AFF',
+  },
+  singlePrompt: {
+    fontSize: 46,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'left',
+    marginBottom: 24,
+    fontFamily: 'SF Pro Display',
+    paddingHorizontal: 16,
   },
 });
 
