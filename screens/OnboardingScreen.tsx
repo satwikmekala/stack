@@ -246,8 +246,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
   progressContainer: {
-    paddingHorizontal: 32,
-    paddingTop: 48,
+    paddingHorizontal: 38,
+    paddingTop: 64,
     paddingBottom: 16,
   },
   progressTrack: {
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   stepContainer: {
     flex: 1,
     justifyContent: 'flex-start',
-    paddingTop: 60,
+    paddingTop: 20,
     paddingHorizontal: 16,
   },
   title: {
@@ -331,12 +331,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'left',
-    marginBottom: 40,
-    lineHeight: 56,
+    marginBottom: 24,
+    lineHeight: 52,
   },
   fab: {
     position: 'absolute',
-    bottom: 56,
+    bottom: 80,
     right: 24,
     width: 56,
     height: 56,
