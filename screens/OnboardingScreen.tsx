@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Animated } from 'react-native';
 import { useApp } from '@/context/AppContext';
 import { UserProfile } from '@/types';
 import { generateSplit } from '@/utils/workoutUtils';
@@ -7,11 +7,13 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 const OnboardingScreen = () => {
   const { dispatch } = useApp();
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
+  const progressAnim = useRef(new Animated.Value(0)).current;
   const [formData, setFormData] = useState({
     name: '',
     experience: '' as 'beginner' | 'intermediate' | 'advanced' | '',
@@ -19,6 +21,36 @@ const OnboardingScreen = () => {
     intensity: '' as 'easy' | 'moderate' | 'hard' | '',
     goal: '' as 'muscle' | 'strength' | 'fitness' | '',
   });
+
+  // Animate progress bar on screen load
+  useEffect(() => {
+    // Progress starts at 0% for first screen, then 20% per completed step
+    const targetProgress = currentStep / 5; // currentStep 0 = 0%, 1 = 20%, 2 = 40%, etc.
+    Animated.timing(progressAnim, {
+      toValue: targetProgress,
+      duration: 800,
+      useNativeDriver: false,
+    }).start();
+  }, [currentStep]);
+
+  // Progress Bar Component
+  const ProgressBar = () => (
+    <View style={styles.progressContainer}>
+      <View style={styles.progressTrack}>
+        <Animated.View
+          style={[
+            styles.progressFill,
+            {
+              width: progressAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['0%', '100%'],
+              }),
+            },
+          ]}
+        />
+      </View>
+    </View>
+  );
 
   const handleNext = () => {
     if (currentStep < 4) {
@@ -174,27 +206,35 @@ const OnboardingScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <ProgressBar />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {renderStep()}
-        <View style={styles.buttonContainer}>
-          <Button
-            title={currentStep === 4 ? "Let's Go!" : 'Continue'}
+        {currentStep === 0 ? (
+          // FAB for first step only
+          <TouchableOpacity
+            style={[styles.fab, !canProceed() && styles.fabDisabled]}
             onPress={handleNext}
             disabled={!canProceed()}
-            size="large"
-          />
-        </View>
-        <View style={styles.progressIndicator}>
-          {[0, 1, 2, 3, 4].map((step) => (
-            <View
-              key={step}
-              style={[
-                styles.progressDot,
-                step <= currentStep && styles.progressDotActive,
-              ]}
+            accessibilityLabel="Continue to next step"
+            accessibilityRole="button"
+          >
+            <Ionicons 
+              name="arrow-forward" 
+              size={24} 
+              color={!canProceed() ? '#8E8E93' : '#000000'} 
             />
-          ))}
-        </View>
+          </TouchableOpacity>
+        ) : (
+          // Regular button for other steps
+          <View style={styles.buttonContainer}>
+            <Button
+              title={currentStep === 4 ? "Let's Go!" : 'Continue'}
+              onPress={handleNext}
+              disabled={!canProceed()}
+              size="large"
+            />
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -205,15 +245,32 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000000',
   },
+  progressContainer: {
+    paddingHorizontal: 32,
+    paddingTop: 48,
+    paddingBottom: 16,
+  },
+  progressTrack: {
+    height: 2,
+    backgroundColor: '#333333',
+    borderRadius: 1,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 1,
+  },
   scrollContent: {
     flexGrow: 1,
-    padding: 16,
-    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 40,
   },
   stepContainer: {
     flex: 1,
-    justifyContent: 'center',
-    minHeight: 400,
+    justifyContent: 'flex-start',
+    paddingTop: 60,
+    paddingHorizontal: 16,
   },
   title: {
     fontSize: 32,
@@ -239,8 +296,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
   underlineInput: {
-    marginHorizontal: 20,
-    marginTop: 8,
+    marginTop: 16,
+    marginBottom: 80,
   },
   optionsContainer: {
     gap: 12,
@@ -266,29 +323,40 @@ const styles = StyleSheet.create({
     marginTop: 32,
     marginBottom: 16,
   },
-  progressIndicator: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 16,
-  },
-  progressDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#2C2C2E',
-  },
   progressDotActive: {
     backgroundColor: '#007AFF',
   },
   singlePrompt: {
-    fontSize: 46,
+    fontSize: 48,
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'left',
-    marginBottom: 32,
-    fontFamily: 'SF Pro Display',
-    paddingHorizontal: 16,
+    marginBottom: 40,
+    lineHeight: 56,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 56,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  fabDisabled: {
+    backgroundColor: '#2C2C2E',
+    elevation: 4,
+    shadowOpacity: 0.1,
   },
 });
 
