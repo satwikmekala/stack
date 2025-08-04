@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserProfile, WorkoutSession, WorkoutType } from '@/types';
 
 interface AppState {
-  user: UserProfile | null;
+  user: UserProfile;
   workoutHistory: WorkoutSession[];
   currentWorkout: WorkoutSession | null;
   isLoading: boolean;
@@ -85,7 +85,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       await AsyncStorage.removeItem('userProfile');
       await AsyncStorage.removeItem('workoutHistory');
-      dispatch({ type: 'SET_USER', payload: null as any });
+      // Reset to initial onboarding state instead of null
+      const initialUser = {
+        name: '',
+        experience: 'beginner' as const,
+        daysPerWeek: 3,
+        intensity: 'moderate' as const,
+        goal: 'fitness' as const,
+        startDate: new Date().toISOString(),
+        currentSplit: [],
+        hasCompletedOnboarding: false,
+      };
+      dispatch({ type: 'SET_USER', payload: initialUser });
       dispatch({ type: 'SET_WORKOUT_HISTORY', payload: [] });
     } catch (error) {
       console.error('Error clearing data:', error);
@@ -101,11 +112,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       if (userProfile) {
         const parsedUser = JSON.parse(userProfile);
-        // Only set user data if they have completed onboarding
-        if (parsedUser.hasCompletedOnboarding) {
-          dispatch({ type: 'SET_USER', payload: parsedUser });
-        }
+        dispatch({ type: 'SET_USER', payload: parsedUser });
       }
+      // If no userProfile exists, keep the initial state (hasCompletedOnboarding: false)
 
       if (workoutHistory) {
         dispatch({ type: 'SET_WORKOUT_HISTORY', payload: JSON.parse(workoutHistory) });

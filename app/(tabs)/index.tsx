@@ -11,18 +11,9 @@ export default function HomeScreen() {
   const { state, dispatch } = useApp();
   const router = useRouter();
 
-  if (state.isLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centered}>
-          <Text style={styles.loadingText}>Loading...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (!state.user?.hasCompletedOnboarding) {
-    return <OnboardingScreen />;
+  // User is guaranteed to exist and have completed onboarding at this point
+  if (!state.user) {
+    return null;
   }
 
   const nextWorkout = getNextWorkout(state.user.currentSplit, state.workoutHistory);
@@ -34,28 +25,34 @@ export default function HomeScreen() {
     router.push('/workout');
   };
 
-  const renderWorkoutCard = (workoutType: string, isRecommended = false) => (
-    <Card key={workoutType} style={[styles.workoutCard, isRecommended && styles.recommendedCard]}>
-      <View style={styles.workoutHeader}>
-        <View style={styles.workoutInfo}>
-          <Text style={styles.workoutName}>{getWorkoutDisplayName(workoutType as any)}</Text>
-          <Text style={styles.muscleGroups}>{getMuscleGroups(workoutType as any)}</Text>
-          <Text style={styles.duration}>{getEstimatedDuration(workoutType as any)}</Text>
-        </View>
-        {isRecommended && (
-          <View style={styles.recommendedBadge}>
-            <Text style={styles.recommendedText}>Next</Text>
+  const renderWorkoutCard = (workoutType: string, isRecommended = false) => {
+    const cardStyle = isRecommended 
+      ? [styles.workoutCard, styles.recommendedCard]
+      : styles.workoutCard;
+    
+    return (
+      <Card key={workoutType} style={cardStyle}>
+        <View style={styles.workoutHeader}>
+          <View style={styles.workoutInfo}>
+            <Text style={styles.workoutName}>{getWorkoutDisplayName(workoutType as any)}</Text>
+            <Text style={styles.muscleGroups}>{getMuscleGroups(workoutType as any)}</Text>
+            <Text style={styles.duration}>{getEstimatedDuration(workoutType as any)}</Text>
           </View>
-        )}
-      </View>
-      <Button
-        title="Start Workout"
-        onPress={() => startWorkout(workoutType)}
-        variant={isRecommended ? 'primary' : 'outline'}
-        style={styles.startButton}
-      />
-    </Card>
-  );
+          {isRecommended && (
+            <View style={styles.recommendedBadge}>
+              <Text style={styles.recommendedText}>Next</Text>
+            </View>
+          )}
+        </View>
+        <Button
+          title="Start Workout"
+          onPress={() => startWorkout(workoutType)}
+          variant={isRecommended ? 'primary' : 'outline'}
+          style={styles.startButton}
+        />
+      </Card>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>

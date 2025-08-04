@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, Alert } from 'react-native';
 import { useApp } from '@/context/AppContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,6 +7,7 @@ import Card from '@/components/ui/Card';
 
 export default function SettingsScreen() {
   const { state, dispatch } = useApp();
+  const [isResetting, setIsResetting] = useState(false);
 
   const resetData = () => {
     Alert.alert(
@@ -19,10 +20,28 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              setIsResetting(true);
+              // Add a small delay to prevent race conditions
+              await new Promise(resolve => setTimeout(resolve, 100));
+              
               await AsyncStorage.clear();
-              dispatch({ type: 'SET_USER', payload: null as any });
+              // Reset to initial onboarding state instead of null
+              const initialUser = {
+                name: '',
+                experience: 'beginner' as const,
+                daysPerWeek: 3,
+                intensity: 'moderate' as const,
+                goal: 'fitness' as const,
+                startDate: new Date().toISOString(),
+                currentSplit: [],
+                hasCompletedOnboarding: false,
+              };
+              dispatch({ type: 'SET_USER', payload: initialUser });
               dispatch({ type: 'SET_WORKOUT_HISTORY', payload: [] });
+              
+              // The AppNavigator will automatically switch to onboarding
             } catch (error) {
+              setIsResetting(false);
               Alert.alert('Error', 'Failed to reset data');
             }
           },
@@ -45,7 +64,19 @@ export default function SettingsScreen() {
     );
   };
 
-  if (!state.user) {
+  // Show loading during reset
+  if (isResetting) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyText}>Resetting app...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Check if user exists and has completed onboarding
+  if (!state.user || !state.user.hasCompletedOnboarding) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.emptyState}>
