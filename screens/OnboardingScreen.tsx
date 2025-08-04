@@ -24,8 +24,20 @@ const OnboardingScreen = () => {
 
   // Animate progress bar on screen load
   useEffect(() => {
-    // Progress starts at 0% for first screen, then 20% per completed step
-    const targetProgress = currentStep / 5; // currentStep 0 = 0%, 1 = 20%, 2 = 40%, etc.
+    // Progress: 0% on first screen, 40% on second, 60% on third, then increments
+    let targetProgress;
+    if (currentStep === 0) {
+      targetProgress = 0; // 0% on first screen
+    } else if (currentStep === 1) {
+      targetProgress = 0.4; // 40% on second screen
+    } else if (currentStep === 2) {
+      targetProgress = 0.6; // 60% on third screen
+    } else if (currentStep === 3) {
+      targetProgress = 0.8; // 80% on fourth screen
+    } else {
+      targetProgress = 1.0; // 100% on final screen
+    }
+    
     Animated.timing(progressAnim, {
       toValue: targetProgress,
       duration: 800,
@@ -100,22 +112,30 @@ const OnboardingScreen = () => {
       case 1:
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.title}>Experience Level</Text>
-            <Text style={styles.question}>How long have you been training?</Text>
-            <View style={styles.optionsContainer}>
+            <Text style={styles.experiencePrompt}>
+              How long have{'\n'}you been lifting?
+            </Text>
+            <View style={styles.pillContainer}>
               {[
-                { value: 'beginner', label: 'Just started', desc: 'Less than 6 months' },
-                { value: 'intermediate', label: 'Few months', desc: '6 months - 2 years' },
-                { value: 'advanced', label: 'Over a year', desc: '2+ years' },
+                { value: 'beginner', label: 'Just getting started' },
+                { value: 'intermediate', label: 'Been training for a bit' },
+                { value: 'advanced', label: "It's a lifestyle now" },
               ].map((option) => (
-                <Card key={option.value} style={styles.optionCard}>
-                  <Button
-                    title={option.label}
-                    onPress={() => setFormData({ ...formData, experience: option.value as any })}
-                    variant={formData.experience === option.value ? 'primary' : 'outline'}
-                  />
-                  <Text style={styles.optionDesc}>{option.desc}</Text>
-                </Card>
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.pillButton,
+                    formData.experience === option.value && styles.pillButtonSelected,
+                  ]}
+                  onPress={() => setFormData({ ...formData, experience: option.value as any })}
+                >
+                  <Text style={[
+                    styles.pillText,
+                    formData.experience === option.value && styles.pillTextSelected,
+                  ]}>
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
               ))}
             </View>
           </View>
@@ -124,18 +144,45 @@ const OnboardingScreen = () => {
       case 2:
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.title}>Training Frequency</Text>
-            <Text style={styles.question}>How many days can you train per week?</Text>
-            <View style={styles.numberPicker}>
-              {[2, 3, 4, 5, 6].map((num) => (
-                <Button
-                  key={num}
-                  title={num.toString()}
-                  onPress={() => setFormData({ ...formData, daysPerWeek: num })}
-                  variant={formData.daysPerWeek === num ? 'primary' : 'outline'}
-                  style={styles.numberButton}
-                />
-              ))}
+            <Text style={styles.experiencePrompt}>
+              How many days{'\n'}do you train?
+            </Text>
+            <View style={styles.numberSelectionContainer}>
+              <View style={styles.numberRow}>
+                {[2, 3, 4, 5].map((num) => (
+                  <TouchableOpacity
+                    key={num}
+                    style={[
+                      styles.numberButton,
+                      formData.daysPerWeek === num && styles.numberButtonSelected,
+                    ]}
+                    onPress={() => setFormData({ ...formData, daysPerWeek: num })}
+                  >
+                    <Text style={[
+                      styles.numberText,
+                      formData.daysPerWeek === num && styles.numberTextSelected,
+                    ]}>
+                      {num}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <View style={styles.numberRowSingle}>
+                <TouchableOpacity
+                  style={[
+                    styles.numberButton,
+                    formData.daysPerWeek === 6 && styles.numberButtonSelected,
+                  ]}
+                  onPress={() => setFormData({ ...formData, daysPerWeek: 6 })}
+                >
+                  <Text style={[
+                    styles.numberText,
+                    formData.daysPerWeek === 6 && styles.numberTextSelected,
+                  ]}>
+                    6
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         );
@@ -209,8 +256,8 @@ const OnboardingScreen = () => {
       <ProgressBar />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {renderStep()}
-        {currentStep === 0 ? (
-          // FAB for first step only
+        {currentStep === 0 || currentStep === 1 || currentStep === 2 ? (
+          // FAB for first three steps
           <TouchableOpacity
             style={[styles.fab, !canProceed() && styles.fabDisabled]}
             onPress={handleNext}
@@ -310,15 +357,6 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     textAlign: 'center',
   },
-  numberPicker: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 12,
-    flexWrap: 'wrap',
-  },
-  numberButton: {
-    minWidth: 60,
-  },
   buttonContainer: {
     marginTop: 32,
     marginBottom: 16,
@@ -333,6 +371,14 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     marginBottom: 24,
     lineHeight: 52,
+  },
+  experiencePrompt: {
+    fontSize: 42,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'left',
+    marginBottom: 32,
+    lineHeight: 48,
   },
   fab: {
     position: 'absolute',
@@ -357,6 +403,82 @@ const styles = StyleSheet.create({
     backgroundColor: '#2C2C2E',
     elevation: 4,
     shadowOpacity: 0.1,
+  },
+  pillContainer: {
+    gap: 24,
+    marginTop: 16,
+    marginBottom: 56,
+  },
+  pillButton: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 56,
+  },
+  pillButtonSelected: {
+    backgroundColor: '#FFFFFF',
+    elevation: 4,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  pillText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  pillTextSelected: {
+    color: '#000000',
+  },
+  numberSelectionContainer: {
+    marginTop: 16,
+    marginBottom: 56,
+    gap: 16,
+  },
+  numberRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  numberRowSingle: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  numberButton: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 28,
+    width: 56,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  numberButtonSelected: {
+    backgroundColor: '#FFFFFF',
+    elevation: 4,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  numberText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  numberTextSelected: {
+    color: '#000000',
   },
 });
 
