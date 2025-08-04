@@ -58,7 +58,9 @@ const OnboardingScreen = () => {
               value={formData.name}
               onChangeText={(name) => setFormData({ ...formData, name })}
               placeholder="Enter your name"
-              style={styles.input}
+              variant="underline"
+              style={styles.underlineInput}
+              autoFocus={true}
             />
           </View>
         );
@@ -236,6 +238,10 @@ const styles = StyleSheet.create({
   input: {
     marginHorizontal: 16,
   },
+  underlineInput: {
+    marginHorizontal: 20,
+    marginTop: 8,
+  },
   optionsContainer: {
     gap: 12,
   },
@@ -280,7 +286,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'left',
-    marginBottom: 24,
+    marginBottom: 32,
     fontFamily: 'SF Pro Display',
     paddingHorizontal: 16,
   },
