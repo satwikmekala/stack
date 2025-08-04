@@ -18,7 +18,16 @@ type AppAction =
   | { type: 'SET_LOADING'; payload: boolean };
 
 const initialState: AppState = {
-  user: null,
+  user: {
+    name: '',
+    experience: 'beginner' as const,
+    daysPerWeek: 3,
+    intensity: 'moderate' as const,
+    goal: 'fitness' as const,
+    startDate: new Date().toISOString(),
+    currentSplit: [],
+    hasCompletedOnboarding: false,
+  },
   workoutHistory: [],
   currentWorkout: null,
   isLoading: true,
@@ -28,10 +37,12 @@ const AppContext = createContext<{
   state: AppState;
   dispatch: React.Dispatch<AppAction>;
   saveData: () => Promise<void>;
+  clearUserData: () => Promise<void>;
 }>({
   state: initialState,
   dispatch: () => {},
   saveData: async () => {},
+  clearUserData: async () => {},
 });
 
 function appReducer(state: AppState, action: AppAction): AppState {
@@ -70,6 +81,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const clearUserData = async () => {
+    try {
+      await AsyncStorage.removeItem('userProfile');
+      await AsyncStorage.removeItem('workoutHistory');
+      dispatch({ type: 'SET_USER', payload: null as any });
+      dispatch({ type: 'SET_WORKOUT_HISTORY', payload: [] });
+    } catch (error) {
+      console.error('Error clearing data:', error);
+    }
+  };
+
   const loadData = async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
@@ -78,7 +100,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const workoutHistory = await AsyncStorage.getItem('workoutHistory');
 
       if (userProfile) {
-        dispatch({ type: 'SET_USER', payload: JSON.parse(userProfile) });
+        const parsedUser = JSON.parse(userProfile);
+        // Only set user data if they have completed onboarding
+        if (parsedUser.hasCompletedOnboarding) {
+          dispatch({ type: 'SET_USER', payload: parsedUser });
+        }
       }
 
       if (workoutHistory) {
@@ -102,7 +128,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [state.user, state.workoutHistory]);
 
   return (
-    <AppContext.Provider value={{ state, dispatch, saveData }}>
+    <AppContext.Provider value={{ state, dispatch, saveData, clearUserData }}>
       {children}
     </AppContext.Provider>
   );

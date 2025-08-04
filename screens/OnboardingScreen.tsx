@@ -42,8 +42,8 @@ const OnboardingScreen = () => {
 
     dispatch({ type: 'SET_USER', payload: userProfile });
 
-    // Navigate to the main app after onboarding is complete
-    router.replace('/');
+    // Navigate to the main app tabs after onboarding is complete
+    router.replace('/(tabs)');
   };
 
   const renderStep = () => {
