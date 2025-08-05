@@ -24,7 +24,7 @@ const OnboardingScreen = () => {
 
   // Animate progress bar on screen load
   useEffect(() => {
-    // Progress: 0% on first screen, 40% on second, 60% on third, then increments
+    // Progress: 0% on first screen, 40% on second, 60% on third, 80% on fourth, 100% on final
     let targetProgress;
     if (currentStep === 0) {
       targetProgress = 0; // 0% on first screen
@@ -144,12 +144,12 @@ const OnboardingScreen = () => {
       case 2:
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.experiencePrompt}>
+            <Text style={styles.trainingPrompt}>
               How many days{'\n'}do you train?
             </Text>
             <View style={styles.numberSelectionContainer}>
               <View style={styles.numberRow}>
-                {[2, 3, 4, 5].map((num) => (
+                {[1, 2, 3, 4].map((num) => (
                   <TouchableOpacity
                     key={num}
                     style={[
@@ -167,21 +167,24 @@ const OnboardingScreen = () => {
                   </TouchableOpacity>
                 ))}
               </View>
-              <View style={styles.numberRowSingle}>
-                <TouchableOpacity
-                  style={[
-                    styles.numberButton,
-                    formData.daysPerWeek === 6 && styles.numberButtonSelected,
-                  ]}
-                  onPress={() => setFormData({ ...formData, daysPerWeek: 6 })}
-                >
-                  <Text style={[
-                    styles.numberText,
-                    formData.daysPerWeek === 6 && styles.numberTextSelected,
-                  ]}>
-                    6
-                  </Text>
-                </TouchableOpacity>
+              <View style={styles.numberRow}>
+                {[5, 6, 7].map((num) => (
+                  <TouchableOpacity
+                    key={num}
+                    style={[
+                      styles.numberButton,
+                      formData.daysPerWeek === num && styles.numberButtonSelected,
+                    ]}
+                    onPress={() => setFormData({ ...formData, daysPerWeek: num })}
+                  >
+                    <Text style={[
+                      styles.numberText,
+                      formData.daysPerWeek === num && styles.numberTextSelected,
+                    ]}>
+                      {num}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             </View>
           </View>
@@ -190,22 +193,30 @@ const OnboardingScreen = () => {
       case 3:
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.title}>Training Intensity</Text>
-            <Text style={styles.question}>How hard do you want to push?</Text>
-            <View style={styles.optionsContainer}>
+            <Text style={styles.intensityPrompt}>
+              How hard do you{'\n'}want to train?
+            </Text>
+            <View style={styles.pillContainer}>
               {[
-                { value: 'easy', label: 'Take it easy', desc: 'Focus on form and consistency' },
-                { value: 'moderate', label: 'Moderate effort', desc: 'Balanced approach' },
-                { value: 'hard', label: 'Push hard', desc: 'Maximum gains' },
+                { value: 'easy', label: "I'm just easing in" },
+                { value: 'moderate', label: "I'll give it a fair shot" },
+                { value: 'hard', label: "I'm all in, let's go!" },
               ].map((option) => (
-                <Card key={option.value} style={styles.optionCard}>
-                  <Button
-                    title={option.label}
-                    onPress={() => setFormData({ ...formData, intensity: option.value as any })}
-                    variant={formData.intensity === option.value ? 'primary' : 'outline'}
-                  />
-                  <Text style={styles.optionDesc}>{option.desc}</Text>
-                </Card>
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.pillButton,
+                    formData.intensity === option.value && styles.pillButtonSelected,
+                  ]}
+                  onPress={() => setFormData({ ...formData, intensity: option.value as any })}
+                >
+                  <Text style={[
+                    styles.pillText,
+                    formData.intensity === option.value && styles.pillTextSelected,
+                  ]}>
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
               ))}
             </View>
           </View>
@@ -256,8 +267,8 @@ const OnboardingScreen = () => {
       <ProgressBar />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {renderStep()}
-        {currentStep === 0 || currentStep === 1 || currentStep === 2 ? (
-          // FAB for first three steps
+        {currentStep === 0 || currentStep === 1 || currentStep === 2 || currentStep === 3 ? (
+          // FAB for first four steps
           <TouchableOpacity
             style={[styles.fab, !canProceed() && styles.fabDisabled]}
             onPress={handleNext}
@@ -380,6 +391,22 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     lineHeight: 48,
   },
+  trainingPrompt: {
+    fontSize: 38,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'left',
+    marginBottom: 32,
+    lineHeight: 44,
+  },
+  intensityPrompt: {
+    fontSize: 36,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'left',
+    marginBottom: 32,
+    lineHeight: 42,
+  },
   fab: {
     position: 'absolute',
     bottom: 80,
@@ -406,7 +433,7 @@ const styles = StyleSheet.create({
   },
   pillContainer: {
     gap: 24,
-    marginTop: 16,
+    marginTop: 4,
     marginBottom: 56,
   },
   pillButton: {
@@ -439,7 +466,7 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   numberSelectionContainer: {
-    marginTop: 16,
+    marginTop: 8,
     marginBottom: 56,
     gap: 16,
   },
@@ -454,9 +481,9 @@ const styles = StyleSheet.create({
   },
   numberButton: {
     backgroundColor: '#1C1C1E',
-    borderRadius: 28,
-    width: 56,
-    height: 56,
+    borderRadius: 32,
+    width: 64,
+    height: 64,
     alignItems: 'center',
     justifyContent: 'center',
   },
