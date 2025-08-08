@@ -3,12 +3,13 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, FlatList } from 'reac
 import { useApp } from '@/context/AppContext';
 import { getWorkoutDisplayName } from '@/utils/workoutUtils';
 import Card from '@/components/ui/Card';
+import { WorkoutSession, ExerciseSession } from '@/types';
 
 export default function CalendarScreen() {
   const { state } = useApp();
 
   const getWorkoutsByDate = () => {
-    const workoutsByDate: { [date: string]: any[] } = {};
+    const workoutsByDate: { [date: string]: WorkoutSession[] } = {};
     
     state.workoutHistory.forEach(workout => {
       const date = new Date(workout.date).toDateString();
@@ -25,7 +26,7 @@ export default function CalendarScreen() {
 
   const workoutDays = getWorkoutsByDate();
 
-  const renderWorkoutDay = ({ item }: { item: [string, any[]] }) => {
+  const renderWorkoutDay = ({ item }: { item: [string, WorkoutSession[]] }) => {
     const [dateString, workouts] = item;
     const date = new Date(dateString);
     
@@ -57,7 +58,7 @@ export default function CalendarScreen() {
                 {workout.exercises.length} exercises
               </Text>
               <Text style={styles.workoutStat}>
-                {workout.exercises.reduce((total, ex) => total + ex.sets.length, 0)} sets
+                {workout.exercises.reduce((total: number, ex: ExerciseSession) => total + ex.sets.length, 0)} sets
               </Text>
             </View>
           </View>

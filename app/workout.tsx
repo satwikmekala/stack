@@ -95,7 +95,7 @@ export default function WorkoutScreen() {
     
     Alert.alert(
       'Workout Complete!',
-      `Great job! You finished your ${state.currentWorkout.workoutType} workout in ${Math.round(duration / 60)} minutes.`,
+      `Great job! You finished your ${state.currentWorkout!.workoutType} workout in ${Math.round(duration / 60)} minutes.`,
       [{ text: 'OK', onPress: () => router.replace('/') }]
     );
   };
