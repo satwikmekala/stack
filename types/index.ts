@@ -33,6 +33,8 @@ export interface UserProfile {
   daysPerWeek: number;
   intensity: 'easy' | 'moderate' | 'hard';
   goal: 'muscle' | 'strength' | 'fitness';
+  planMode: PlanMode;
+  splitType?: SplitType;
   startDate: string;
   currentSplit: WorkoutType[];
   hasCompletedOnboarding: boolean;
@@ -44,3 +46,6 @@ export interface ProgressionSuggestion {
   weight: number;
   reps: number;
 }
+
+export type PlanMode = 'auto' | 'split' | 'flex';
+export type SplitType = 'ppl' | 'upperLower' | 'fullBody' | 'bro';

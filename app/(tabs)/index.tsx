@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
 import { useApp } from '@/context/AppContext';
-import OnboardingScreen from '@/screens/OnboardingScreen';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import { getWorkoutDisplayName, getMuscleGroups, getEstimatedDuration, createWorkoutSession, getNextWorkout } from '@/utils/workoutUtils';

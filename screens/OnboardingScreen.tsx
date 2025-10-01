@@ -10,40 +10,40 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 const OnboardingScreen = () => {
-  const { dispatch } = useApp();
+  const { state, dispatch } = useApp();
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const progressAnim = useRef(new Animated.Value(0)).current;
+  const [planMode, setPlanMode] = useState<'auto' | 'split' | 'flex' | null>(null);
+  const [phase, setPhase] = useState<'plan' | 'splitPicker'>('plan');
+  const [splitType, setSplitType] = useState<'ppl' | 'upperLower' | 'fullBody' | 'bro' | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     experience: '' as 'beginner' | 'intermediate' | 'advanced' | '',
-    daysPerWeek: 3,
+    daysPerWeek: 0,
     intensity: '' as 'easy' | 'moderate' | 'hard' | '',
     goal: '' as 'muscle' | 'strength' | 'fitness' | '',
   });
 
+  console.log('planMode', planMode);
+  console.log('splitType', splitType);
+
+  const getProgressTarget = (): number => {
+    const base = Math.min(currentStep, 4) * 0.2;
+    if (currentStep === 4) {
+      return phase === 'splitPicker' ? 0.9 : 0.8;
+    }
+    return base;
+  };
+
   // Animate progress bar on screen load
   useEffect(() => {
-    // Progress: 0% on first screen, 40% on second, 60% on third, 80% on fourth, 100% on final
-    let targetProgress;
-    if (currentStep === 0) {
-      targetProgress = 0; // 0% on first screen
-    } else if (currentStep === 1) {
-      targetProgress = 0.4; // 40% on second screen
-    } else if (currentStep === 2) {
-      targetProgress = 0.6; // 60% on third screen
-    } else if (currentStep === 3) {
-      targetProgress = 0.8; // 80% on fourth screen
-    } else {
-      targetProgress = 1.0; // 100% on final screen
-    }
-    
     Animated.timing(progressAnim, {
-      toValue: targetProgress,
+      toValue: getProgressTarget(),
       duration: 800,
       useNativeDriver: false,
     }).start();
-  }, [currentStep]);
+  }, [currentStep, phase]);
 
   // Progress Bar Component
   const ProgressBar = () => (
@@ -64,12 +64,68 @@ const OnboardingScreen = () => {
     </View>
   );
 
+  // Unified Back Button (minimal chevron, grey tone, no background circle)
+  const BackButton = ({ onPress, testID = 'onboarding-back' }: { onPress: () => void; testID?: string }) => (
+    <TouchableOpacity
+      onPress={onPress}
+      accessibilityLabel="Go back"
+      accessibilityRole="button"
+      testID={testID}
+      style={styles.backMinimal}
+      hitSlop={{ top: 8, left: 8, bottom: 8, right: 8 }}
+    >
+      <Ionicons name="chevron-back" size={24} color="#8E8E93" />
+    </TouchableOpacity>
+  );
+
+  const handleBack = () => {
+    if (currentStep === 4 && phase === 'splitPicker') {
+      Animated.timing(progressAnim, {
+        toValue: 0.8,
+        duration: 800,
+        useNativeDriver: false,
+      }).start();
+      setPhase('plan');
+      return;
+    }
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
   const handleNext = () => {
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
-    } else {
-      completeOnboarding();
+      return;
     }
+    // Step 5 branching (plan mode)
+    if (currentStep === 4) {
+      if (!planMode) return;
+
+      // Persist planMode to context immediately
+      dispatch({ type: 'SET_USER', payload: { ...state.user, planMode } as any });
+
+      if (planMode === 'split') {
+        // animate to 90% and reveal inline split picker
+        Animated.timing(progressAnim, {
+          toValue: 0.9,
+          duration: 800,
+          useNativeDriver: false,
+        }).start();
+        setPhase('splitPicker');
+        return;
+      }
+      // auto or flex → animate to 100% then complete
+      Animated.timing(progressAnim, {
+        toValue: 1.0,
+        duration: 800,
+        useNativeDriver: false,
+      }).start();
+      completeOnboarding();
+      return;
+    }
+    // Fallback
+    completeOnboarding();
   };
 
   const completeOnboarding = () => {
@@ -78,7 +134,8 @@ const OnboardingScreen = () => {
       experience: formData.experience as 'beginner' | 'intermediate' | 'advanced',
       daysPerWeek: formData.daysPerWeek,
       intensity: formData.intensity as 'easy' | 'moderate' | 'hard',
-      goal: formData.goal as 'muscle' | 'strength' | 'fitness',
+      goal: (formData.goal || 'fitness') as 'muscle' | 'strength' | 'fitness',
+      planMode: (planMode || 'auto') as any,
       startDate: new Date().toISOString(),
       currentSplit: generateSplit(formData.daysPerWeek),
       hasCompletedOnboarding: true,
@@ -225,24 +282,67 @@ const OnboardingScreen = () => {
       case 4:
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.title}>Primary Goal</Text>
-            <Text style={styles.question}>What's your main focus?</Text>
-            <View style={styles.optionsContainer}>
-              {[
-                { value: 'muscle', label: 'Build muscle', desc: 'Hypertrophy focused' },
-                { value: 'strength', label: 'Get stronger', desc: 'Strength focused' },
-                { value: 'fitness', label: 'General fitness', desc: 'Overall health' },
-              ].map((option) => (
-                <Card key={option.value} style={styles.optionCard}>
-                  <Button
-                    title={option.label}
-                    onPress={() => setFormData({ ...formData, goal: option.value as any })}
-                    variant={formData.goal === option.value ? 'primary' : 'outline'}
-                  />
-                  <Text style={styles.optionDesc}>{option.desc}</Text>
-                </Card>
-              ))}
-            </View>
+            {phase === 'plan' ? (
+              <>
+                <Text style={styles.planModePrompt}>
+                  How should we build{`\n`}your plan?
+                </Text>
+                <View style={styles.pillContainer}>
+                  {[
+                    { value: 'auto', label: 'Auto (recommended)', subtitle: 'Pick the best split for me.' },
+                    { value: 'split', label: 'I already follow a split', subtitle: 'Match my current style.' },
+                    { value: 'flex', label: 'Flexible', subtitle: 'Rotate focus so it never feels stale.' },
+                  ].map((option) => (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[
+                        styles.pillButton,
+                        planMode === (option.value as any) && styles.pillButtonSelected,
+                      ]}
+                      onPress={() => setPlanMode(option.value as any)}
+                    >
+                      <Text style={[
+                        styles.pillText,
+                        planMode === (option.value as any) && styles.pillTextSelected,
+                      ]}>
+                        {option.label}
+                      </Text>
+                      <Text style={styles.optionDesc}>
+                        {option.subtitle}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={styles.planModePrompt}>Which split do you follow?</Text>
+                <View style={styles.pillContainer}>
+                  {[
+                    { value: 'ppl', label: 'Push / Pull / Legs' },
+                    { value: 'upperLower', label: 'Upper / Lower' },
+                    { value: 'fullBody', label: 'Full Body' },
+                    { value: 'bro', label: 'Bro Split (Chest / Back / Shoulders / Arms / Legs)' },
+                  ].map((option) => (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[
+                        styles.pillButton,
+                        splitType === (option.value as any) && styles.pillButtonSelected,
+                      ]}
+                      onPress={() => setSplitType(option.value as any)}
+                    >
+                      <Text style={[
+                        styles.pillText,
+                        splitType === (option.value as any) && styles.pillTextSelected,
+                      ]}>
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
           </View>
         );
 
@@ -257,7 +357,7 @@ const OnboardingScreen = () => {
       case 1: return formData.experience !== '';
       case 2: return formData.daysPerWeek > 0;
       case 3: return formData.intensity !== '';
-      case 4: return formData.goal !== '';
+      case 4: return phase === 'plan' ? planMode !== null : splitType !== null;
       default: return false;
     }
   };
@@ -267,8 +367,8 @@ const OnboardingScreen = () => {
       <ProgressBar />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {renderStep()}
-        {currentStep === 0 || currentStep === 1 || currentStep === 2 || currentStep === 3 ? (
-          // FAB for first four steps
+        {currentStep === 0 || currentStep === 1 || currentStep === 2 || currentStep === 3 || currentStep === 4 ? (
+          // FAB for all onboarding steps
           <TouchableOpacity
             style={[styles.fab, !canProceed() && styles.fabDisabled]}
             onPress={handleNext}
@@ -276,23 +376,12 @@ const OnboardingScreen = () => {
             accessibilityLabel="Continue to next step"
             accessibilityRole="button"
           >
-            <Ionicons 
-              name="arrow-forward" 
-              size={24} 
-              color={!canProceed() ? '#8E8E93' : '#000000'} 
-            />
+            <Ionicons name="arrow-forward" size={24} color={!canProceed() ? '#8E8E93' : '#000000'} />
           </TouchableOpacity>
-        ) : (
-          // Regular button for other steps
-          <View style={styles.buttonContainer}>
-            <Button
-              title={currentStep === 4 ? "Let's Go!" : 'Continue'}
-              onPress={handleNext}
-              disabled={!canProceed()}
-              size="large"
-            />
-          </View>
-        )}
+        ) : null}
+        {currentStep >= 1 ? (
+          <BackButton onPress={handleBack} />
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -305,29 +394,29 @@ const styles = StyleSheet.create({
   },
   progressContainer: {
     paddingHorizontal: 38,
-    paddingTop: 64,
+    paddingTop: 48,
     paddingBottom: 16,
   },
   progressTrack: {
-    height: 2,
+    height: 4,
     backgroundColor: '#333333',
-    borderRadius: 1,
+    borderRadius: 2,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 1,
+    borderRadius: 2,
   },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingTop: 40,
+    paddingTop: 32,
   },
   stepContainer: {
     flex: 1,
     justifyContent: 'flex-start',
-    paddingTop: 20,
+    paddingTop: 0,
     paddingHorizontal: 16,
   },
   title: {
@@ -354,7 +443,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
   underlineInput: {
-    marginTop: 16,
+    marginTop: 28,
     marginBottom: 80,
   },
   optionsContainer: {
@@ -376,27 +465,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   singlePrompt: {
-    fontSize: 48,
+    fontSize: 38,
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'left',
-    marginBottom: 24,
-    lineHeight: 52,
+    marginBottom: 28,
+    lineHeight: 44,
   },
   experiencePrompt: {
-    fontSize: 42,
+    fontSize: 38,
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'left',
-    marginBottom: 32,
-    lineHeight: 48,
+    marginBottom: 28,
+    lineHeight: 44,
   },
   trainingPrompt: {
     fontSize: 38,
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'left',
-    marginBottom: 32,
+    marginBottom: 28,
     lineHeight: 44,
   },
   intensityPrompt: {
@@ -404,13 +493,30 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
     textAlign: 'left',
-    marginBottom: 32,
+    marginBottom: 28,
     lineHeight: 42,
   },
+  structurePrompt: {
+    fontSize: 36,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'left',
+    marginBottom: 28,
+    lineHeight: 42,
+  },
+  planModePrompt: {
+    fontSize: 36,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'left',
+    marginBottom: 28,
+    lineHeight: 42,
+  },
+  // removed old top-left back arrow styles (now using unified bottom-left BackButton)
   fab: {
     position: 'absolute',
-    bottom: 80,
-    right: 24,
+    bottom: 56,
+    right: 28,
     width: 56,
     height: 56,
     borderRadius: 28,
@@ -426,6 +532,25 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
   },
+  fabLeft: {
+    right: undefined,
+    left: 28,
+  },
+  backMinimal: {
+    position: 'absolute',
+    bottom: 56,
+    left: 28,
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backMinimalText: {
+    color: '#8E8E93',
+    fontSize: 28,
+    fontWeight: '600',
+    lineHeight: 30,
+  },
   fabDisabled: {
     backgroundColor: '#2C2C2E',
     elevation: 4,
@@ -433,7 +558,7 @@ const styles = StyleSheet.create({
   },
   pillContainer: {
     gap: 24,
-    marginTop: 4,
+    marginTop: 0,
     marginBottom: 56,
   },
   pillButton: {
@@ -466,7 +591,7 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   numberSelectionContainer: {
-    marginTop: 8,
+    marginTop: 0,
     marginBottom: 56,
     gap: 16,
   },
